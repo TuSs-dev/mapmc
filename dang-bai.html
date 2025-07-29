@@ -23,8 +23,25 @@
     <p><a href="trang-chu.html">Xem bài đăng</a></p>
   </div>
 
-  <script>
-    function addPost() {
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBsaRCUIb2V_6OltOGvZ5gOb7L7IGbF0zU",
+    authDomain: "webb-715d4.firebaseapp.com",
+    databaseURL: "https://webb-715d4-default-rtdb.firebaseio.com",
+    projectId: "webb-715d4",
+    storageBucket: "webb-715d4.firebasestorage.app",
+    messagingSenderId: "261801384268",
+    appId: "1:261801384268:web:6c7ee77d4e01ac369297e9",
+    measurementId: "G-3EQ3W93K8N"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  window.addPost = function () {
     const title = document.getElementById('title').value.trim();
     const content = document.getElementById('content').value.trim();
     const imageInput = document.getElementById('image');
@@ -35,39 +52,32 @@
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = function () {
+    const savePost = (imageURL = '') => {
       const post = {
-        title: title,
-        content: content,
-        image: reader.result,
-        likes: 0,
-        comments: []
+        title,
+        content,
+        imageURL,
+        likes: 0
       };
-      firebase.database().ref('posts').push(post);
-      alert('Đăng bài thành công!');
-      document.getElementById('title').value = '';
-      document.getElementById('content').value = '';
-      document.getElementById('image').value = '';
+      const postRef = push(ref(db, 'posts'));
+      set(postRef, post).then(() => {
+        alert('Đăng bài thành công!');
+        document.getElementById('title').value = '';
+        document.getElementById('content').value = '';
+        document.getElementById('image').value = '';
+      });
     };
 
     if (imageFile) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        savePost(reader.result);
+      };
       reader.readAsDataURL(imageFile);
     } else {
-      // Nếu không có ảnh
-      const post = {
-        title: title,
-        content: content,
-        image: '',
-        likes: 0,
-        comments: []
-      };
-      firebase.database().ref('posts').push(post);
-      alert('Đăng bài thành công!');
-      document.getElementById('title').value = '';
-      document.getElementById('content').value = '';
+      savePost();
     }
-  }
+  };
   </script>
 </body>
 </html>
