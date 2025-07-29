@@ -1,0 +1,137 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trang Chủ</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+    }
+    .post {
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .post img {
+      max-width: 100%;
+      border-radius: 10px;
+    }
+    .post-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    .like-btn, .comment-btn {
+      margin-right: 10px;
+      cursor: pointer;
+      background-color: #1877f2;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+    }
+    .comment-section {
+      margin-top: 10px;
+    }
+    .comment-section input {
+      width: 70%;
+      padding: 5px;
+      margin-right: 5px;
+    }
+    .comment {
+      padding: 5px;
+      border-top: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>  <h2>📰 Bài đăng</h2>
+  <a href="content://ru.zdevs.zarchiver.external/storage/emulated/0/Download/Zalo/dang-bai.html">
+    <button class="like-btn">➕ Đăng bài</button>
+  </a>  <div id="postList"></div>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBsaRCUIb2V_6OltOGvZ5gOb7L7IGbF0zU",
+      authDomain: "webb-715d4.firebaseapp.com",
+      databaseURL: "https://webb-715d4-default-rtdb.firebaseio.com",
+      projectId: "webb-715d4",
+      storageBucket: "webb-715d4.firebasestorage.app",
+      messagingSenderId: "261801384268",
+      appId: "1:261801384268:web:6c7ee77d4e01ac369297e9",
+      measurementId: "G-3EQ3W93K8N"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const postList = document.getElementById("postList");
+
+    const postsRef = ref(db, 'posts/');
+
+    onValue(postsRef, (snapshot) => {
+      postList.innerHTML = '';
+      const posts = snapshot.val();
+      for (let id in posts) {
+        const post = posts[id];
+
+        const postDiv = document.createElement("div");
+        postDiv.className = "post";
+        postDiv.innerHTML = `
+          <div class="post-title">${post.title}</div>
+          <img src="${post.imageURL}" alt="Ảnh bài đăng">
+          <div>
+            <button class="like-btn">👍 Thích (${post.likes || 0})</button>
+          </div>
+          <div class="comment-section">
+            <input type="text" placeholder="Tên của bạn" class="username-input"/>
+            <input type="text" placeholder="Viết bình luận..." class="comment-input"/>
+            <button class="comment-btn">Gửi</button>
+            <div class="comment-list"></div>
+          </div>
+        `;
+
+        const likeBtn = postDiv.querySelector(".like-btn");
+        likeBtn.onclick = () => {
+          const updatedLikes = (post.likes || 0) + 1;
+          set(ref(db, `posts/${id}/likes`), updatedLikes);
+        };
+
+        const commentBtn = postDiv.querySelector(".comment-btn");
+        const commentInput = postDiv.querySelector(".comment-input");
+        const usernameInput = postDiv.querySelector(".username-input");
+        const commentList = postDiv.querySelector(".comment-list");
+
+        const commentRef = ref(db, `posts/${id}/comments/`);
+        onValue(commentRef, (snap) => {
+          commentList.innerHTML = '';
+          const comments = snap.val();
+          for (let cid in comments) {
+            const c = comments[cid];
+            const div = document.createElement("div");
+            div.className = "comment";
+            div.textContent = `${c.name || "Ẩn danh"}: ${c.text}`;
+            commentList.appendChild(div);
+          }
+        });
+
+        commentBtn.onclick = () => {
+          const text = commentInput.value.trim();
+          const name = usernameInput.value.trim() || "Ẩn danh";
+          if (text) {
+            const newComment = push(commentRef);
+            set(newComment, { name, text });
+            commentInput.value = '';
+          }
+        };
+
+        postList.appendChild(postDiv);
+      }
+    });
+  </script></body>
+</html>
