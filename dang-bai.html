@@ -1,4 +1,3 @@
-<!-- dang-bai.html -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -6,78 +5,120 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Đăng bài</title>
   <style>
-    body { font-family: Arial; background: #f0f2f5; margin: 0; padding: 0; }
-    header { background: #1877f2; color: white; text-align: center; padding: 12px; font-size: 20px; }
-    .container { max-width: 600px; margin: 30px auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    input, textarea { width: 100%; margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
-    button { background: #1877f2; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; }
+    body {
+      font-family: Arial;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1877f2;
+      color: white;
+      text-align: center;
+      padding: 12px;
+      font-size: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    input, textarea {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      background: #1877f2;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    a {
+      display: inline-block;
+      margin-top: 10px;
+      text-decoration: none;
+      color: #1877f2;
+    }
   </style>
 </head>
 <body>
   <header>Đăng bài viết</header>
   <div class="container">
     <input type="text" id="title" placeholder="Tiêu đề bài viết" />
-    <textarea id="content" rows="3" placeholder="Nội dung..."></textarea>
+    <textarea id="content" rows="3" placeholder="Nội dung bài viết..."></textarea>
     <input type="file" id="image" accept="image/*" />
-    <button onclick="addPost()">Đăng bài</button>
-    <p><a href="trang-chu.html">Xem bài đăng</a></p>
+    <button id="submitPost">Đăng bài</button>
+    <a href="trang-chu.html">⬅ Quay về trang chủ</a>
   </div>
 
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBsaRCUIb2V_6OltOGvZ5gOb7L7IGbF0zU",
-    authDomain: "webb-715d4.firebaseapp.com",
-    databaseURL: "https://webb-715d4-default-rtdb.firebaseio.com",
-    projectId: "webb-715d4",
-    storageBucket: "webb-715d4.firebasestorage.app",
-    messagingSenderId: "261801384268",
-    appId: "1:261801384268:web:6c7ee77d4e01ac369297e9",
-    measurementId: "G-3EQ3W93K8N"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  window.addPost = function () {
-    const title = document.getElementById('title').value.trim();
-    const content = document.getElementById('content').value.trim();
-    const imageInput = document.getElementById('image');
-    const imageFile = imageInput.files[0];
-
-    if (!title && !content && !imageFile) {
-      alert('Vui lòng nhập ít nhất tiêu đề, nội dung hoặc ảnh!');
-      return;
-    }
-
-    const savePost = (imageURL = '') => {
-      const post = {
-        title,
-        content,
-        imageURL,
-        likes: 0
-      };
-      const postRef = push(ref(db, 'posts'));
-      set(postRef, post).then(() => {
-        alert('Đăng bài thành công!');
-        document.getElementById('title').value = '';
-        document.getElementById('content').value = '';
-        document.getElementById('image').value = '';
-      });
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBsaRCUIb2V_6OltOGvZ5gOb7L7IGbF0zU",
+      authDomain: "webb-715d4.firebaseapp.com",
+      databaseURL: "https://webb-715d4-default-rtdb.firebaseio.com",
+      projectId: "webb-715d4",
+      storageBucket: "webb-715d4.firebasestorage.app",
+      messagingSenderId: "261801384268",
+      appId: "1:261801384268:web:6c7ee77d4e01ac369297e9",
+      measurementId: "G-3EQ3W93K8N"
     };
 
-    if (imageFile) {
-      const reader = new FileReader();
-      reader.onload = function () {
-        savePost(reader.result);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    document.getElementById('submitPost').addEventListener('click', () => {
+      const title = document.getElementById('title').value.trim();
+      const content = document.getElementById('content').value.trim();
+      const imageFile = document.getElementById('image').files[0];
+
+      if (!title && !content && !imageFile) {
+        alert('Vui lòng nhập ít nhất tiêu đề, nội dung hoặc ảnh!');
+        return;
+      }
+
+      const savePost = (imageURL = '') => {
+        const postData = {
+          title,
+          content,
+          imageURL,
+          likes: 0
+        };
+        const newPostRef = push(ref(db, 'posts'));
+        set(newPostRef, postData).then(() => {
+          alert('Đăng bài thành công!');
+          document.getElementById('title').value = '';
+          document.getElementById('content').value = '';
+          document.getElementById('image').value = '';
+        }).catch((error) => {
+          alert('Lỗi khi đăng bài: ' + error.message);
+        });
       };
-      reader.readAsDataURL(imageFile);
-    } else {
-      savePost();
-    }
-  };
+
+      if (imageFile) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          savePost(reader.result); // base64 image
+        };
+        reader.readAsDataURL(imageFile);
+      } else {
+        savePost(); // không có ảnh
+      }
+    });
   </script>
 </body>
 </html>
