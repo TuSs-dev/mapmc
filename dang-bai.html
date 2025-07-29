@@ -1,0 +1,73 @@
+<!-- dang-bai.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng bài</title>
+  <style>
+    body { font-family: Arial; background: #f0f2f5; margin: 0; padding: 0; }
+    header { background: #1877f2; color: white; text-align: center; padding: 12px; font-size: 20px; }
+    .container { max-width: 600px; margin: 30px auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    input, textarea { width: 100%; margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
+    button { background: #1877f2; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header>Đăng bài viết</header>
+  <div class="container">
+    <input type="text" id="title" placeholder="Tiêu đề bài viết" />
+    <textarea id="content" rows="3" placeholder="Nội dung..."></textarea>
+    <input type="file" id="image" accept="image/*" />
+    <button onclick="addPost()">Đăng bài</button>
+    <p><a href="trang-chu.html">Xem bài đăng</a></p>
+  </div>
+
+  <script>
+    function addPost() {
+    const title = document.getElementById('title').value.trim();
+    const content = document.getElementById('content').value.trim();
+    const imageInput = document.getElementById('image');
+    const imageFile = imageInput.files[0];
+
+    if (!title && !content && !imageFile) {
+      alert('Vui lòng nhập ít nhất tiêu đề, nội dung hoặc ảnh!');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function () {
+      const post = {
+        title: title,
+        content: content,
+        image: reader.result,
+        likes: 0,
+        comments: []
+      };
+      firebase.database().ref('posts').push(post);
+      alert('Đăng bài thành công!');
+      document.getElementById('title').value = '';
+      document.getElementById('content').value = '';
+      document.getElementById('image').value = '';
+    };
+
+    if (imageFile) {
+      reader.readAsDataURL(imageFile);
+    } else {
+      // Nếu không có ảnh
+      const post = {
+        title: title,
+        content: content,
+        image: '',
+        likes: 0,
+        comments: []
+      };
+      firebase.database().ref('posts').push(post);
+      alert('Đăng bài thành công!');
+      document.getElementById('title').value = '';
+      document.getElementById('content').value = '';
+    }
+  }
+  </script>
+</body>
+</html>
