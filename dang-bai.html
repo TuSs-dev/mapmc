@@ -1,6 +1,3 @@
-<!-- ==============================
-File: dang-bai.html (Modified)
-============================== -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -94,6 +91,7 @@ File: dang-bai.html (Modified)
     <input type="text" id="title" placeholder="Tiêu đề bài viết" />
     <textarea id="content" rows="3" placeholder="Nội dung bài viết..."></textarea>
     <input type="file" id="image" accept="image/*" multiple />
+    <input type="file" id="mcworld" accept=".mcworld" />
     <input type="password" id="pin" placeholder="Nhập mã PIN để xoá bài" />
     <button id="submitPost">Đăng bài</button>
     <a href="trang-chinh.html">⬅ Quay về trang chủ</a>
@@ -126,26 +124,39 @@ File: dang-bai.html (Modified)
       const title = document.getElementById('title').value.trim();
       const content = document.getElementById('content').value.trim();
       const imageFiles = document.getElementById('image').files;
+      const mcworldFile = document.getElementById('mcworld').files[0];
       const pin = document.getElementById('pin').value.trim();
 
-      if (!title && !content && imageFiles.length === 0) {
-        alert('Vui lòng nhập ít nhất tiêu đề, nội dung hoặc ảnh!');
+      const dateNow = new Date();
+      const createdAt = `${dateNow.getHours()}:${dateNow.getMinutes()}:${dateNow.getSeconds()} ngày ${dateNow.getDate()} tháng ${dateNow.getMonth() + 1} năm ${dateNow.getFullYear()}`;
+
+      if (!title && !content && imageFiles.length === 0 && !mcworldFile) {
+        alert('Vui lòng nhập ít nhất tiêu đề, nội dung hoặc ảnh/map!');
         return;
       }
 
-      const readerPromises = Array.from(imageFiles).map(file => new Promise(resolve => {
+      const readFiles = files => Promise.all(Array.from(files).map(file => new Promise(resolve => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.readAsDataURL(file);
-      }));
+      })));
 
-      Promise.all(readerPromises).then(imageURLs => {
+      const readMcworld = file => new Promise(resolve => {
+        if (!file) return resolve(null);
+        const reader = new FileReader();
+        reader.onload = () => resolve({ name: file.name, data: reader.result });
+        reader.readAsDataURL(file);
+      });
+
+      Promise.all([readFiles(imageFiles), readMcworld(mcworldFile)]).then(([imageURLs, mcworldData]) => {
         const postData = {
           title,
           content,
           images: imageURLs,
           likes: 0,
-          pin
+          pin,
+          createdAt,
+          mcworld: mcworldData
         };
         const newPostRef = push(ref(db, 'posts'));
         set(newPostRef, postData).then(() => {
@@ -153,6 +164,7 @@ File: dang-bai.html (Modified)
           document.getElementById('title').value = '';
           document.getElementById('content').value = '';
           document.getElementById('image').value = '';
+          document.getElementById('mcworld').value = '';
           document.getElementById('pin').value = '';
         }).catch((error) => {
           alert('Lỗi khi đăng bài: ' + error.message);

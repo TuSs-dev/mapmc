@@ -1,5 +1,5 @@
 <!-- ==============================
-File: trang-chinh.html (Modified)
+File: trang-chinh.html (Updated)
 ============================== -->
 <!DOCTYPE html>
 <html lang="vi">
@@ -66,6 +66,10 @@ File: trang-chinh.html (Modified)
     .post-title {
       font-size: 18px;
       font-weight: bold;
+    }
+    .post-time {
+      font-size: 12px;
+      color: #777;
     }
     .post-content {
       margin-top: 10px;
@@ -152,6 +156,11 @@ File: trang-chinh.html (Modified)
       localStorage.setItem(key, Date.now().toString());
     };
 
+    const getRandomColor = () => {
+      const colors = ['#ff5733', '#33c1ff', '#33ff77', '#f0c419', '#9b59b6', '#e74c3c'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    };
+
     onValue(postsRef, (snapshot) => {
       postList.innerHTML = '';
       const posts = snapshot.val();
@@ -159,10 +168,18 @@ File: trang-chinh.html (Modified)
         const post = posts[id];
         const postDiv = document.createElement("div");
         postDiv.className = "post";
+
+        const longContent = post.content && post.content.length > 100;
+        const displayedContent = longContent ? post.content.slice(0, 100) + '...' : post.content || '';
+
         postDiv.innerHTML = `
           <div class="post-title">${post.title}</div>
-          <div class="post-content">${post.content || ''}</div>
-          ${post.images ? post.images.map(img => `<img src="${img}" />`).join('') : ''}
+          <div class="post-time">${post.createdAt || ''}</div>
+          <div class="post-content">${displayedContent}</div>
+          ${longContent ? `<a href="#" class="show-more">Xem thêm nội dung</a>` : ''}
+          ${post.images ? post.images.slice(0, 2).map(img => `<img src="${img}" />`).join('') : ''}
+          ${post.images && post.images.length > 2 ? `<a href="#" class="show-more-images">Xem thêm ảnh</a>` : ''}
+          ${post.mcworld ? `<div><a href="${post.mcworld.data}" download="${post.mcworld.name}">Tải map</a></div>` : ''}
           <div>
             <button class="like-btn">👍 Thích (${post.likes || 0})</button>
             <button class="delete-btn">🗑️ Xoá</button>
@@ -174,6 +191,24 @@ File: trang-chinh.html (Modified)
             <div class="comment-list"></div>
           </div>
         `;
+
+        postDiv.querySelectorAll('.show-more').forEach(btn => {
+          btn.onclick = (e) => {
+            e.preventDefault();
+            btn.previousElementSibling.textContent = post.content;
+            btn.remove();
+          }
+        });
+
+        postDiv.querySelectorAll('.show-more-images').forEach(btn => {
+          btn.onclick = (e) => {
+            e.preventDefault();
+            postDiv.querySelectorAll('img').forEach(img => img.remove());
+            btn.insertAdjacentHTML('beforebegin', post.images.map(img => `<img src="${img}" />`).join(''));
+            document.querySelectorAll('.show-more-images').forEach(b => b !== btn && b.remove());
+            btn.remove();
+          }
+        });
 
         const likeBtn = postDiv.querySelector(".like-btn");
         const deleteBtn = postDiv.querySelector(".delete-btn");
@@ -210,7 +245,7 @@ File: trang-chinh.html (Modified)
             const c = comments[cid];
             const div = document.createElement("div");
             div.className = "comment";
-            div.textContent = `${c.name || "Ẩn danh"}: ${c.text}`;
+            div.innerHTML = `<span style="color:${getRandomColor()}">${c.name || "Ẩn danh"}</span>: ${c.text}`;
             commentList.appendChild(div);
           }
         });
