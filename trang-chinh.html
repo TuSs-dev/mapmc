@@ -1,4 +1,8 @@
-<!DOCTYPE html><html lang="en">
+<!-- ==============================
+File: trang-chinh.html (Modified)
+============================== -->
+<!DOCTYPE html>
+<html lang="vi">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,6 +12,43 @@
       font-family: Arial, sans-serif;
       background-color: #f2f2f2;
       margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #1877f2;
+      color: white;
+      padding: 12px;
+      font-size: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .menu {
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .menu-content {
+      display: none;
+      position: absolute;
+      right: 10px;
+      top: 50px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    .menu-content a {
+      display: block;
+      padding: 10px;
+      text-decoration: none;
+      color: black;
+    }
+    .menu-content a:hover {
+      background: #eee;
+    }
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
       padding: 20px;
     }
     .post {
@@ -20,13 +61,16 @@
     .post img {
       max-width: 100%;
       border-radius: 10px;
+      margin-top: 5px;
     }
     .post-title {
       font-size: 18px;
       font-weight: bold;
-      margin: 10px 0;
     }
-    .like-btn, .comment-btn {
+    .post-content {
+      margin-top: 10px;
+    }
+    .like-btn, .comment-btn, .delete-btn {
       margin-right: 10px;
       cursor: pointer;
       background-color: #1877f2;
@@ -41,7 +85,7 @@
     .comment-section input {
       width: 70%;
       padding: 5px;
-      margin-right: 5px;
+      margin: 5px 0;
     }
     .comment {
       padding: 5px;
@@ -49,12 +93,26 @@
     }
   </style>
 </head>
-<body>  <h2>📰 Bài đăng</h2>
-  <a href="content://ru.zdevs.zarchiver.external/storage/emulated/0/Download/Zalo/dang-bai.html">
-    <button class="like-btn">➕ Đăng bài</button>
-  </a>  <div id="postList"></div>  <script type="module">
+<body>
+  <header>
+    📰 Bài đăng
+    <div class="menu">&#9776;</div>
+  </header>
+  <div class="menu-content" id="menuContent">
+    <a href="trang-chinh.html">Trang chính</a>
+    <a href="dang-bai.html">Đăng bài</a>
+    <a href="#">Liên hệ</a>
+  </div>
+  <div class="container">
+    <a href="dang-bai.html">
+      <button class="like-btn">➕ Đăng bài</button>
+    </a>
+    <div id="postList"></div>
+  </div>
+
+  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, onValue, push, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBsaRCUIb2V_6OltOGvZ5gOb7L7IGbF0zU",
@@ -70,23 +128,44 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const postList = document.getElementById("postList");
+    document.querySelector('.menu').onclick = () => {
+      const menu = document.getElementById('menuContent');
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    };
 
+    const postList = document.getElementById("postList");
     const postsRef = ref(db, 'posts/');
+
+    const getUserId = () => localStorage.getItem('user_id') || (() => {
+      const id = 'user-' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('user_id', id);
+      return id;
+    })();
+
+    const getLastCommentTime = (postId) => {
+      const key = `comment_time_${postId}`;
+      return parseInt(localStorage.getItem(key) || '0');
+    };
+
+    const setLastCommentTime = (postId) => {
+      const key = `comment_time_${postId}`;
+      localStorage.setItem(key, Date.now().toString());
+    };
 
     onValue(postsRef, (snapshot) => {
       postList.innerHTML = '';
       const posts = snapshot.val();
       for (let id in posts) {
         const post = posts[id];
-
         const postDiv = document.createElement("div");
         postDiv.className = "post";
         postDiv.innerHTML = `
           <div class="post-title">${post.title}</div>
-          <img src="${post.imageURL}" alt="Ảnh bài đăng">
+          <div class="post-content">${post.content || ''}</div>
+          ${post.images ? post.images.map(img => `<img src="${img}" />`).join('') : ''}
           <div>
             <button class="like-btn">👍 Thích (${post.likes || 0})</button>
+            <button class="delete-btn">🗑️ Xoá</button>
           </div>
           <div class="comment-section">
             <input type="text" placeholder="Tên của bạn" class="username-input"/>
@@ -97,17 +176,33 @@
         `;
 
         const likeBtn = postDiv.querySelector(".like-btn");
+        const deleteBtn = postDiv.querySelector(".delete-btn");
+        const userId = getUserId();
+        const likedKey = `liked_${id}`;
+
         likeBtn.onclick = () => {
-          const updatedLikes = (post.likes || 0) + 1;
-          set(ref(db, `posts/${id}/likes`), updatedLikes);
+          const liked = localStorage.getItem(likedKey) === 'true';
+          const newLikes = (post.likes || 0) + (liked ? -1 : 1);
+          localStorage.setItem(likedKey, liked ? 'false' : 'true');
+          set(ref(db, `posts/${id}/likes`), newLikes);
+        };
+
+        deleteBtn.onclick = () => {
+          const pin = prompt("Nhập mã PIN để xoá bài:");
+          if (pin === post.pin) {
+            remove(ref(db, `posts/${id}`));
+            alert("Đã xoá bài.");
+          } else {
+            alert("Sai mã PIN.");
+          }
         };
 
         const commentBtn = postDiv.querySelector(".comment-btn");
         const commentInput = postDiv.querySelector(".comment-input");
         const usernameInput = postDiv.querySelector(".username-input");
         const commentList = postDiv.querySelector(".comment-list");
-
         const commentRef = ref(db, `posts/${id}/comments/`);
+
         onValue(commentRef, (snap) => {
           commentList.innerHTML = '';
           const comments = snap.val();
@@ -121,11 +216,18 @@
         });
 
         commentBtn.onclick = () => {
+          const now = Date.now();
+          const lastComment = getLastCommentTime(id);
+          if (now - lastComment < 2 * 60 * 60 * 1000) {
+            alert("Bạn chỉ được bình luận 1 lần mỗi 2 tiếng!");
+            return;
+          }
           const text = commentInput.value.trim();
           const name = usernameInput.value.trim() || "Ẩn danh";
           if (text) {
             const newComment = push(commentRef);
             set(newComment, { name, text });
+            setLastCommentTime(id);
             commentInput.value = '';
           }
         };
@@ -133,5 +235,6 @@
         postList.appendChild(postDiv);
       }
     });
-  </script></body>
+  </script>
+</body>
 </html>

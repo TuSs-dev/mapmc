@@ -1,3 +1,6 @@
+<!-- ==============================
+File: dang-bai.html (Modified)
+============================== -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -14,9 +17,35 @@
     header {
       background: #1877f2;
       color: white;
-      text-align: center;
       padding: 12px;
       font-size: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .menu {
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .menu-content {
+      display: none;
+      position: absolute;
+      right: 10px;
+      top: 50px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    .menu-content a {
+      display: block;
+      padding: 10px;
+      text-decoration: none;
+      color: #000;
+    }
+    .menu-content a:hover {
+      background: #f2f2f2;
     }
     .container {
       max-width: 600px;
@@ -52,21 +81,28 @@
   </style>
 </head>
 <body>
-  <header>Đăng bài </header>
+  <header>
+    Đăng bài
+    <div class="menu">&#9776;</div>
+  </header>
+  <div class="menu-content" id="menuContent">
+    <a href="trang-chinh.html">Trang chính</a>
+    <a href="dang-bai.html">Đăng bài</a>
+    <a href="#">Liên hệ</a>
+  </div>
   <div class="container">
     <input type="text" id="title" placeholder="Tiêu đề bài viết" />
     <textarea id="content" rows="3" placeholder="Nội dung bài viết..."></textarea>
-    <input type="file" id="image" accept="image/*" />
+    <input type="file" id="image" accept="image/*" multiple />
+    <input type="password" id="pin" placeholder="Nhập mã PIN để xoá bài" />
     <button id="submitPost">Đăng bài</button>
     <a href="trang-chinh.html">⬅ Quay về trang chủ</a>
   </div>
 
   <script type="module">
-    // Import Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBsaRCUIb2V_6OltOGvZ5gOb7L7IGbF0zU",
       authDomain: "webb-715d4.firebaseapp.com",
@@ -81,22 +117,35 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    document.querySelector('.menu').onclick = () => {
+      const menu = document.getElementById('menuContent');
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    };
+
     document.getElementById('submitPost').addEventListener('click', () => {
       const title = document.getElementById('title').value.trim();
       const content = document.getElementById('content').value.trim();
-      const imageFile = document.getElementById('image').files[0];
+      const imageFiles = document.getElementById('image').files;
+      const pin = document.getElementById('pin').value.trim();
 
-      if (!title && !content && !imageFile) {
+      if (!title && !content && imageFiles.length === 0) {
         alert('Vui lòng nhập ít nhất tiêu đề, nội dung hoặc ảnh!');
         return;
       }
 
-      const savePost = (imageURL = '') => {
+      const readerPromises = Array.from(imageFiles).map(file => new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      }));
+
+      Promise.all(readerPromises).then(imageURLs => {
         const postData = {
           title,
           content,
-          imageURL,
-          likes: 0
+          images: imageURLs,
+          likes: 0,
+          pin
         };
         const newPostRef = push(ref(db, 'posts'));
         set(newPostRef, postData).then(() => {
@@ -104,20 +153,11 @@
           document.getElementById('title').value = '';
           document.getElementById('content').value = '';
           document.getElementById('image').value = '';
+          document.getElementById('pin').value = '';
         }).catch((error) => {
           alert('Lỗi khi đăng bài: ' + error.message);
         });
-      };
-
-      if (imageFile) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          savePost(reader.result); // base64 image
-        };
-        reader.readAsDataURL(imageFile);
-      } else {
-        savePost(); // không có ảnh
-      }
+      });
     });
   </script>
 </body>
